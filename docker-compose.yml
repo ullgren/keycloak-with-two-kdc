@@ -1,0 +1,70 @@
+version: '2'
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:nightly
+    # image: quay.io/ponu/keycloak:fix-for-two-kerberos-kdc
+    command: 
+      - start-dev
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak-json:/opt/keycloak/data/import
+      - keycloak_h2_db:/opt/keycloak/data/h2
+      - krb5kdc-data-dk:/var/lib/krb5kdc-dk
+      - krb5kdc-data-se:/var/lib/krb5kdc-se
+    ports:
+      - "8080:8080"
+    networks:
+      default:
+        aliases:
+          - keycloak.local
+
+  kerberos-dk:
+     build: docker-krb5-server/
+     restart: always
+     ports:
+      - "127.0.2.1:88:88"
+      - "127.0.2.1:464:464"
+      - "127.0.2.1:749:749"
+     environment:
+       KRB5_REALM: DK.EXAMPLE.COM
+       KRB5_KDC: s1.example.com
+       KRB5_USER: preben
+       KRB5_USER_PASS: abc123
+       KRB5_HTTP_SVC: s2.example.com
+     healthcheck:
+       test: ["CMD-SHELL", "nc -znv -w1 127.0.0.1 88 && nc -znv -w1 127.0.0.1 464 && nc -znv -w1 127.0.0.1 749" ]
+       interval: 10s
+       timeout: 5s
+       retries: 3
+     volumes:
+      - krb5kdc-data-dk:/var/lib/krb5kdc
+
+  kerberos-se:
+     build: docker-krb5-server/
+     restart: always
+     ports:
+      - "127.0.2.3:88:88"
+      - "127.0.2.3:464:464"
+      - "127.0.2.3:749:749"
+     environment:
+       KRB5_REALM: SE.EXAMPLE.COM
+       KRB5_KDC: s3.example.com
+       KRB5_USER: sven
+       KRB5_USER_PASS: abc123
+       KRB5_HTTP_SVC: s2.example.com
+     healthcheck:
+       test: ["CMD-SHELL", "nc -znv -w1 127.0.0.1 88 && nc -znv -w1 127.0.0.1 464 && nc -znv -w1 127.0.0.1 749" ]
+       interval: 10s
+       timeout: 5s
+       retries: 3
+     volumes:
+      - krb5kdc-data-se:/var/lib/krb5kdc
+
+volumes:
+  keycloak_h2_db:
+  krb5kdc-data-dk:
+  krb5kdc-data-se:
+
