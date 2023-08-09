@@ -2,6 +2,8 @@
 
 This repository contains the files for a Keycloak demo with Kerberos user federation towards two seperate KDCs.
 
+[Video of this demo](https://youtu.be/j0v2Vz8KbeY)
+
 ## Prerequisits
 
 This demo has been tested with podman 3.4.4 and podman-compose 1.0.6.
